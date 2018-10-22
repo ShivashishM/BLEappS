@@ -1,6 +1,7 @@
 package com.example.bletestapp;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,14 +10,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Switch;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     //TODO defining TAG variable
     private static final String TAG = "MainActivity";
     //TODO this will initialise bluetooth
     BluetoothAdapter mBluetoothAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,25 +42,41 @@ public class MainActivity extends AppCompatActivity {
                 enableDisableBT();
             }
         });
+
+
+        //TODO defining xml button context to java object
+        Button btsearch = (Button) findViewById(R.id.btsearch);
+        //TODO defining click event of button
+        btsearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //TODO console print
+                Log.d(TAG, "onClick: search bluetooth.");
+                mBluetoothAdapter.startDiscovery();
+                IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+                registerReceiver(mReceiver, filter);
+            }
+        });
+
+
+
     }
 
-    public void enableDisableBT(){
+    public void enableDisableBT() {
         //TODO checking bluetooth state
-        if(mBluetoothAdapter == null){
+        if (mBluetoothAdapter == null) {
             Log.d(TAG, "enableDisableBT: Does not have BT capabilities.");
-        }
-        else if(!mBluetoothAdapter.isEnabled()){
+        } else if (!mBluetoothAdapter.isEnabled()) {
             Log.d(TAG, "enableDisableBT: enabling BT.");
             //TODO making Activity to bluetooth Enable
-            Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            //Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             //TODO starting Activity to bluetooth Enable
-            startActivity(enableBTIntent);
+            //startActivity(enableBTIntent);
             //TODO creating IntentFilter  with action
             IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
             //TODO calling onReceive of IntentFilter
             registerReceiver(mBroadcastReceiver1, BTIntent);
-        }
-        else if(mBluetoothAdapter.isEnabled()){
+        } else if (mBluetoothAdapter.isEnabled()) {
             Log.d(TAG, "enableDisableBT: disabling BT.");
             //TODO disable the Bluetooth
             mBluetoothAdapter.disable();
@@ -67,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+
     // Create a BroadcastReceiver for ACTION_FOUND
     private final BroadcastReceiver mBroadcastReceiver1 = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -75,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
             if (action.equals(mBluetoothAdapter.ACTION_STATE_CHANGED)) {
                 final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, mBluetoothAdapter.ERROR);
 
-                switch(state){
+                switch (state) {
                     case BluetoothAdapter.STATE_OFF:
                         Log.d(TAG, "onReceive: STATE OFF");
                         break;
@@ -92,4 +115,37 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+
+//    private Set<BluetoothDevice> pairedDevices;
+//    ListView lv;
+//
+//    public void list(View v) {
+//        pairedDevices = mBluetoothAdapter.getBondedDevices();
+//
+//        ArrayList list = new ArrayList();
+//
+//        for (BluetoothDevice bt : pairedDevices) list.add(bt.getName());
+//        Toast.makeText(getApplicationContext(), "Showing Paired Devices", Toast.LENGTH_SHORT).show();
+//
+//        final ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, list);
+//
+//        lv.setAdapter(adapter);
+//    }
+
+    private ListView btlist;
+    private ArrayList<String> mDeviceList = new ArrayList<String>();
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                mDeviceList.add(device.getName() + "\n" + device.getAddress());
+                Log.i("BT", device.getName() + "\n" + device.getAddress());
+                btlist.setAdapter(new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, mDeviceList));
+            }
+        }
+    };
+
 }
